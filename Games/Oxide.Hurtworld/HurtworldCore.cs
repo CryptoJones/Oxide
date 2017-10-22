@@ -119,8 +119,8 @@ namespace Oxide.Game.Hurtworld
         /// <summary>
         /// Called when the server is first initialized
         /// </summary>
-        [HookMethod("OnServerInitialized")]
-        private void OnServerInitialized()
+        [HookMethod("IOnServerInitialized")] // Internal wrapper to avoid call on each player connection
+        private void IOnServerInitialized()
         {
             if (serverInitialized) return;
 
@@ -242,7 +242,7 @@ namespace Oxide.Game.Hurtworld
             PlayerSession session = null;
             foreach (var i in sessions)
             {
-                if (!nameOrIdOrIp.Equals(i.Value.Name, StringComparison.OrdinalIgnoreCase) &&
+                if (!nameOrIdOrIp.Equals(i.Value.Identity.Name, StringComparison.OrdinalIgnoreCase) &&
                     !nameOrIdOrIp.Equals(i.Value.SteamId.ToString()) && !nameOrIdOrIp.Equals(i.Key.ipAddress)) continue;
                 session = i.Value;
                 break;

@@ -18,8 +18,10 @@
     <GameName>Hurtworld</GameName>
     <ManagedDir>Hurtworld_Data\Managed</ManagedDir>
     <SteamAppId>405100</SteamAppId>
-    <SteamBranch>public</SteamBranch>
+    <SteamBranch>public,itemv2</SteamBranch>
+    <SteamDepot>405101</SteamDepot>
     <SteamLogin>anonymous</SteamLogin>
+    <DefineConstants Condition="!$(SteamBranch.Contains(','))">$(SteamBranch.ToUpper())</DefineConstants>
     <!--
       Workaround for targeting net35 with dotnet CLI
       https://github.com/Microsoft/msbuild/issues/1333#issuecomment-296346352
@@ -41,25 +43,28 @@
       <HintPath>..\..\Oxide.References\$(OutputPath)Merged\Oxide.References.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\Dependencies\$(AssemblyName)\$(ManagedDir)\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\Dependencies\$(PackageId)\$(ManagedDir)\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>..\Dependencies\$(AssemblyName)\$(ManagedDir)\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>..\Dependencies\$(PackageId)\$(ManagedDir)\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib">
-      <HintPath>..\Dependencies\$(AssemblyName)\$(ManagedDir)\mscorlib.dll</HintPath>
+      <HintPath>..\Dependencies\$(PackageId)\$(ManagedDir)\mscorlib.dll</HintPath>
+    </Reference>
+    <Reference Include="Rewired_Core">
+      <HintPath>..\Dependencies\$(PackageId)\$(ManagedDir)\Rewired_Core.dll</HintPath>
     </Reference>
     <Reference Include="System">
-      <HintPath>..\Dependencies\$(AssemblyName)\$(ManagedDir)\System.dll</HintPath>
+      <HintPath>..\Dependencies\$(PackageId)\$(ManagedDir)\System.dll</HintPath>
     </Reference>
     <Reference Include="uLink">
-      <HintPath>..\Dependencies\$(AssemblyName)\$(ManagedDir)\uLink.dll</HintPath>
+      <HintPath>..\Dependencies\$(PackageId)\$(ManagedDir)\uLink.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\Dependencies\$(AssemblyName)\$(ManagedDir)\UnityEngine.dll</HintPath>
+      <HintPath>..\Dependencies\$(PackageId)\$(ManagedDir)\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>..\Dependencies\$(AssemblyName)\$(ManagedDir)\UnityEngine.UI.dll</HintPath>
+      <HintPath>..\Dependencies\$(PackageId)\$(ManagedDir)\UnityEngine.UI.dll</HintPath>
     </Reference>
     <None Remove="**\DepotDownloader.config" />
     <None Remove="Files\**" />
@@ -78,12 +83,12 @@
   </Target>
   <Target Name="BeforeBuild">
     <!-- Currently only works on Windows due to Windows-only tools used -->
-    <Exec Command="powershell -ExecutionPolicy Unrestricted $(SolutionDir)Steam.ps1 -project $(AssemblyName) -dotnet $(TargetFramework) -appid $(SteamAppId) -branch $(SteamBranch) -managed $(ManagedDir)" />
+    <Exec Command="powershell -ExecutionPolicy Bypass $(SolutionDir)Steam.ps1 -project $(AssemblyName) -dotnet $(TargetFramework) -appid $(SteamAppId) -branch $(SteamBranch.Split(',')[0]) -depot $(SteamDepot) -managed $(ManagedDir)" />
   </Target>
   <Target Name="AfterBuild">
     <ItemGroup>
       <GameFiles Include="$(ProjectDir)Files\**\*.*" />
-      <ManagedFiles Include="$(SolutionDir)Games\Dependencies\$(AssemblyName)\$(ManagedDir)\Assembly-CSharp.dll" />
+      <ManagedFiles Include="$(SolutionDir)Games\Dependencies\$(PackageId)\$(ManagedDir)\Assembly-CSharp.dll; $(SolutionDir)Games\Dependencies\$(PackageId)\$(ManagedDir)\*_Original.dll" />
       <ManagedFiles Include="$(SolutionDir)Extensions\Oxide.CSharp\$(OutputPath)Oxide.CSharp.dll" />
       <ManagedFiles Include="$(SolutionDir)Extensions\Oxide.CSharp\Dependencies\**\*.*" />
       <ManagedFiles Include="$(SolutionDir)Extensions\Oxide.MySql\$(OutputPath)Oxide.MySql.dll" />
@@ -100,9 +105,8 @@
     <Copy SourceFiles="@(ManagedFiles)" DestinationFiles="@(ManagedFiles->'$(BundleDir)\$(GameName)\$(ManagedDir)\%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(PackageFiles)" DestinationFiles="@(PackageFiles->'$(BundleDir)\$(GameName)\$(ManagedDir)\%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(PatchedFiles)" DestinationFiles="@(PatchedFiles->'$(BundleDir)\$(GameName)\$(ManagedDir)\%(RecursiveDir)%(Filename)%(Extension)')" />
-    <CallTarget Targets="Deploy" Condition="Exists('$(ProjectDir).deploy')" />
   </Target>
-  <Target Name="Deploy">
+  <Target Name="DeployLocally" AfterTargets="_PackAsBuildAfterTarget" Condition="Exists('$(ProjectDir).deploy')">
     <Exec Command="start /b /wait taskkill /f /im Hurtworld.exe /fi &quot;memusage gt 2&quot;" Condition="'$(OS)' == 'Windows_NT'" />
     <Exec Command="start /b /wait taskkill /f /im CSharpCompiler.exe /fi &quot;memusage gt 2&quot;" Condition="'$(OS)' == 'Windows_NT'" />
     <ReadLinesFromFile File="$(ProjectDir).deploy">
@@ -111,6 +115,15 @@
     <ItemGroup>
       <DeployFiles Include="$(BundleDir)\$(GameName)\**\*.*" />
     </ItemGroup>
+    <PropertyGroup>
+      <DeployPath Condition="!$(SteamBranch.Contains(','))">$(DeployPath)-$(SteamBranch)</DeployPath>
+    </PropertyGroup>
     <Copy Condition="'$(DeployPath)' != ''" SourceFiles="@(DeployFiles)" DestinationFiles="@(DeployFiles->'$(DeployPath)\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+  <Target Name="BuildBranch" AfterTargets="DeployLocally" Condition="$(SteamBranch.Contains(','))">
+    <PropertyGroup>
+      <SteamBranch>$(SteamBranch.Split(',')[1])</SteamBranch>
+    </PropertyGroup>
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Clean;Build" Properties="PackageId=$(AssemblyName)-$(SteamBranch);GameName=$(GameName)-$(SteamBranch);SteamBranch=$(SteamBranch)" />
   </Target>
 </Project>
