@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using Facepunch;
+﻿using Facepunch;
 using Facepunch.Extend;
 using Network;
 using Oxide.Core;
@@ -10,6 +6,10 @@ using Oxide.Core.Extensions;
 using Oxide.Core.RemoteConsole;
 using Oxide.Plugins;
 using Rust;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using UnityEngine;
 
 namespace Oxide.Game.Rust
@@ -44,22 +44,35 @@ namespace Oxide.Game.Rust
         /// </summary>
         public override VersionNumber Version => AssemblyVersion;
 
+        /// <summary>
+        /// Default game-specific references for use in plugins
+        /// </summary>
         internal static readonly HashSet<string> DefaultReferences = new HashSet<string>
         {
             "ApexAI", "Facepunch.Network", "Facepunch.Steamworks", "Facepunch.System", "Facepunch.UnityEngine", "Rust.Data", "Rust.Global", "Rust.Workshop"
         };
 
+        /// <summary>
+        /// List of assemblies allowed for use in plugins
+        /// </summary>
         public override string[] WhitelistAssemblies => new[]
         {
             "Assembly-CSharp", "Assembly-CSharp-firstpass", "DestMath", "Facepunch.Network", "Facepunch.Steamworks", "Facepunch.System", "Facepunch.UnityEngine",
-            "mscorlib", "Oxide.Core", "Oxide.Rust", "protobuf-net", "RustBuild", "Rust.Data", "Rust.Global", "System", "System.Core", "UnityEngine"
+            "mscorlib", "Oxide.Core", "Oxide.Rust", /* < Needed for non-C# plugins for some reason */ "RustBuild", "Rust.Data", "Rust.Global", "System", "System.Core", "UnityEngine"
         };
+
+        /// <summary>
+        /// List of namespaces allowed for use in plugins
+        /// </summary>
         public override string[] WhitelistNamespaces => new[]
         {
             "ConVar", "Dest", "Facepunch", "Network", "Oxide.Game.Rust.Cui", "ProtoBuf", "PVT", "Rust", "Steamworks", "System.Collections",
             "System.Security.Cryptography", "System.Text", "UnityEngine"
         };
 
+        /// <summary>
+        /// List of filter matches to apply to console output
+        /// </summary>
         public static string[] Filter =
         {
             "alphamapResolution is clamped to the range of",
@@ -114,6 +127,7 @@ namespace Oxide.Game.Rust
         public override void OnModLoad()
         {
             CSharpPluginLoader.PluginReferences.UnionWith(DefaultReferences);
+
             if (Interface.Oxide.EnableConsole()) Output.OnMessage += HandleLog;
         }
 
@@ -180,34 +194,27 @@ namespace Oxide.Game.Rust
             if (type == LogType.Warning)
             {
                 color = ConsoleColor.Yellow;
-                ConVar.Server.Log("Log.Warning.txt", message);
                 remoteType = "warning";
             }
             else if (type == LogType.Error)
             {
                 color = ConsoleColor.Red;
-                ConVar.Server.Log("Log.Error.txt", message);
                 remoteType = "error";
             }
             else if (type == LogType.Exception)
             {
                 color = ConsoleColor.Red;
-                ConVar.Server.Log("Log.Exception.txt", message);
                 remoteType = "error";
             }
             else if (type == LogType.Assert)
             {
                 color = ConsoleColor.Red;
-                ConVar.Server.Log("Log.Assert.txt", message);
                 remoteType = "error";
             }
             else if (message.ToLower().StartsWith("[chat]"))
             {
-                ConVar.Server.Log("Log.Chat.txt", message);
                 remoteType = "chat";
             }
-            else
-                ConVar.Server.Log("Log.Log.txt", message);
 
             Interface.Oxide.ServerConsole.AddMessage(message, color);
             Interface.Oxide.RemoteConsole.SendMessage(new RemoteMessage
