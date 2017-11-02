@@ -1,4 +1,5 @@
 ﻿using Oxide.Core.Libraries;
+using Oxide.Core.Libraries.Covalence;
 using Sandbox;
 using Sandbox.Engine.Multiplayer;
 using Sandbox.Game.Multiplayer;
@@ -249,6 +250,7 @@ namespace Oxide.Game.SpaceEngineers.Libraries
         {
             if (string.IsNullOrEmpty(message)) return;
 
+            message = Formatter.ToPlaintext(message);
             var msg = new ScriptedChatMsg
             {
                 Text = string.IsNullOrEmpty(prefix) ? message : (string.IsNullOrEmpty(message) ? prefix : $"{prefix}: {message}"),

@@ -42,10 +42,14 @@ namespace Oxide.Core.SQLite
         /// </summary>
         public SQLiteExtension(ExtensionManager manager) : base(manager)
         {
-            if (Environment.OSVersion.Platform != PlatformID.Unix) return;
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                var configPath = Path.Combine(Interface.Oxide.ExtensionDirectory, "System.Data.SQLite.dll.config");
+                if (File.Exists(configPath)) return;
 
-            var extDir = Interface.Oxide.ExtensionDirectory;
-            File.WriteAllText(Path.Combine(extDir, "System.Data.SQLite.dll.config"), $"<configuration>\n<dllmap dll=\"sqlite3\" target=\"{extDir}/x86/libsqlite3.so\" os=\"!windows,osx\" cpu=\"x86\" />\n<dllmap dll=\"sqlite3\" target=\"{extDir}/x64/libsqlite3.so\" os=\"!windows,osx\" cpu=\"x86-64\" />\n</configuration>");
+                File.WriteAllText(configPath, $"<configuration>\n<dllmap dll=\"sqlite3\" target=\"./x86/libsqlite3.so\" os=\"!windows,osx\" cpu=\"x86\" />\n" +
+                    $"<dllmap dll=\"sqlite3\" target=\"./x64/libsqlite3.so\" os=\"!windows,osx\" cpu=\"x86-64\" />\n</configuration>");
+            }
         }
 
         /// <summary>

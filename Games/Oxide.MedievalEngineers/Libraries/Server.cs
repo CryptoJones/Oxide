@@ -1,4 +1,5 @@
 ﻿using Oxide.Core.Libraries;
+using Oxide.Core.Libraries.Covalence;
 using Sandbox;
 using Sandbox.Engine.Multiplayer;
 using System;
@@ -46,6 +47,7 @@ namespace Oxide.Game.MedievalEngineers.Libraries
         /// <param name="prefix"></param>
         public void Broadcast(string message, string prefix = null)
         {
+            message = Formatter.ToPlaintext(message);
             MyMultiplayer.Static.SendChatMessage(prefix != null ? $"{prefix} {message}" : message);
         }
 

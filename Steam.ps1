@@ -61,6 +61,8 @@ function Find-Dependencies {
         }
 
         Get-Downloader
+    } else {
+        Get-Dependencies
     }
 }
 
@@ -105,6 +107,8 @@ function Get-Downloader {
     } else {
         Write-Host "Latest version of DepotDownloader already downloaded"
     }
+
+    Get-Dependencies
 }
 
 function Get-Dependencies {
@@ -170,6 +174,12 @@ function Get-Dependencies {
             exit 1
         }
     }
+
+    if ($deobf) {
+        Get-Deobfuscators
+    } else {
+        Get-Patcher
+    }
 }
 
 function Get-Deobfuscators {
@@ -201,7 +211,7 @@ function Get-Deobfuscators {
             }
 
             # Cleanup downloaded .zip file
-            Remove-Item "$depot_dir\de4dot.zip"
+            Remove-Item "$de4dot_dir\de4dot.zip"
         } else {
             Write-Host "Latest version of de4dot already downloaded"
         }
@@ -227,6 +237,8 @@ function Start-Deobfuscator {
             Rename-Item $_ $_.Name.Replace("-cleaned", "")
         }
     }
+
+    Get-Patcher
 }
 
 function Get-Patcher {
@@ -271,6 +283,3 @@ function Start-Patcher {
 }
 
 Find-Dependencies
-Get-Dependencies
-Get-Deobfuscators
-Get-Patcher

@@ -86,10 +86,12 @@ namespace Oxide.Game.ReignOfKings
             var id = player.Id.ToString();
             var ip = player.Connection.IpAddress;
 
+            Covalence.PlayerManager.PlayerJoin(player.Id, player.Name); // TODO: Handle this automatically
+
             // Call out and see if we should reject
             var loginSpecific = Interface.Call("CanClientLogin", player);
             var loginCovalence = Interface.Call("CanUserLogin", player.Name, id, ip);
-            var canLogin = loginSpecific ?? loginCovalence;
+            var canLogin = loginSpecific ?? loginCovalence; // TODO: Fix 'ReignOfKingsCore' hook conflict when both return
 
             // Check if player can login
             if (canLogin is string || (canLogin is bool && !(bool)canLogin))
@@ -103,7 +105,7 @@ namespace Oxide.Game.ReignOfKings
             // Call the approval hooks
             var approvedSpecific = Interface.Call("OnUserApprove", player);
             var approvedCovalence = Interface.Call("OnUserApproved", player.Name, id, ip);
-            return approvedSpecific ?? approvedCovalence;
+            return approvedSpecific ?? approvedCovalence; // TODO: Fix 'ReignOfKingsCore' hook conflict when both return
         }
 
         /// <summary>
@@ -115,7 +117,7 @@ namespace Oxide.Game.ReignOfKings
         private object OnPlayerChat(PlayerMessageEvent evt)
         {
             // Call covalence hook
-            return Interface.Call("OnUserChat", Covalence.PlayerManager.FindPlayerById(evt.PlayerId.ToString()), evt.Message);
+            return Interface.Call("OnUserChat", evt.Player.IPlayer, evt.Message);
         }
 
         /// <summary>
@@ -144,7 +146,12 @@ namespace Oxide.Game.ReignOfKings
 
             // Let covalence know
             Covalence.PlayerManager.PlayerConnected(player);
-            Interface.Call("OnUserConnected", Covalence.PlayerManager.FindPlayerById(player.Id.ToString()));
+            var iplayer = Covalence.PlayerManager.FindPlayerById(player.Id.ToString());
+            if (iplayer != null)
+            {
+                player.IPlayer = iplayer;
+                Interface.Call("OnUserConnected", iplayer);
+            }
         }
 
         /// <summary>
@@ -161,7 +168,7 @@ namespace Oxide.Game.ReignOfKings
             Interface.Call("OnPlayerDisconnected", player);
 
             // Let covalence know
-            Interface.Call("OnUserDisconnected", Covalence.PlayerManager.FindPlayerById(player.Id.ToString()), "Unknown"); // TODO: Localization
+            Interface.Call("OnUserDisconnected", player.IPlayer, "Unknown"); // TODO: Localization
             Covalence.PlayerManager.PlayerDisconnected(player);
         }
 
@@ -173,7 +180,7 @@ namespace Oxide.Game.ReignOfKings
         private void OnPlayerSpawn(PlayerFirstSpawnEvent evt)
         {
             // Call covalence hook
-            Interface.Call("OnUserSpawn", Covalence.PlayerManager.FindPlayerById(evt.Player.Id.ToString()));
+            Interface.Call("OnUserSpawn", evt.Player.IPlayer);
         }
 
         /// <summary>
@@ -184,7 +191,7 @@ namespace Oxide.Game.ReignOfKings
         private void OnPlayerRespawn(PlayerRespawnEvent evt)
         {
             // Call covalence hook
-            Interface.Call("OnUserRespawn", Covalence.PlayerManager.FindPlayerById(evt.Player.Id.ToString()));
+            Interface.Call("OnUserRespawn", evt.Player.IPlayer);
         }
 
         #endregion Player Hooks
